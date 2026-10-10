@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa del club</title>
+<meta name="description" content="Los países que el club de lectura ha recorrido a través de sus libros.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,650;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f1f4f1;
+  --panel: #ffffff;
+  --ink: #1d2a23;
+  --muted: #5e6c64;
+  --line: #d9e1db;
+  --ocean: #dcebf5;
+  --land: #ffffff;
+  --border: #a5b2a9;
+  --accent: #5a9472;
+  --accent-soft: #d2e5d8;
+  --hover: #e9b949;
+  --on-ink: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1512; --panel: #161e1a; --ink: #e3ebe5; --muted: #93a29a; --line: #27332c;
+    --ocean: #122131; --land: #1f2a24; --border: #3e4d44;
+    --accent: #84c29d; --accent-soft: #3d6a50; --hover: #e9b949; --on-ink: #0f1512;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1512; --panel: #161e1a; --ink: #e3ebe5; --muted: #93a29a; --line: #27332c;
+    --ocean: #122131; --land: #1f2a24; --border: #3e4d44;
+    --accent: #84c29d; --accent-soft: #3d6a50; --hover: #e9b949; --on-ink: #0f1512;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.5 Inter, system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+header { max-width: 1400px; margin: 0 auto; padding: 32px 24px 16px; }
+header .vistas { margin-top: 20px; }
+.kicker {
+  font: 500 11px Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent); margin: 0 0 6px;
+}
+h1 {
+  font-family: Fraunces, Georgia, serif; font-weight: 650;
+  font-size: clamp(30px, 4.5vw, 46px); line-height: 1.05; margin: 0; letter-spacing: -.01em;
+}
+h1 em { color: var(--accent); font-weight: 500; }
+.sub { color: var(--muted); margin: 8px 0 0; font-size: 14px; }
+.vistas { display: flex; flex-wrap: wrap; gap: 6px; }
+.vistas button {
+  font: 500 14px Inter, sans-serif; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 3px; background: var(--panel); color: var(--ink);
+  padding: 6px 12px; transition: background .15s, color .15s, border-color .15s;
+}
+.vistas button:hover { border-color: var(--ink); }
+.vistas button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.vistas button .n { font-size: 12px; opacity: .6; margin-left: 6px; }
+
+main {
+  max-width: 1400px; margin: 0 auto; padding: 8px 24px 32px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start;
+}
+.mapa {
+  position: relative; background: var(--ocean); border: 1px solid var(--line);
+  border-radius: 4px; overflow: hidden;
+}
+.mapa svg { display: block; width: 100%; height: auto; touch-action: none; cursor: grab; }
+.mapa svg:active { cursor: grabbing; }
+.oceano { fill: var(--ocean); }
+.reticula { fill: none; stroke: var(--border); stroke-opacity: .35; stroke-width: .4; stroke-dasharray: 1.5 2; }
+.pais { fill: var(--land); stroke: var(--border); stroke-width: .5; transition: fill .25s; }
+.pais.leido { cursor: pointer; }
+.pais:hover, .pais.foco { fill: var(--hover) !important; }
+.punto { stroke: var(--panel); pointer-events: all; cursor: pointer; }
+.zoom {
+  position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column;
+  border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--panel);
+}
+.zoom button {
+  width: 34px; height: 34px; border: 0; border-bottom: 1px solid var(--line);
+  background: transparent; color: var(--ink); font: 600 16px/1 Inter, sans-serif; cursor: pointer;
+}
+.zoom button:last-child { border-bottom: 0; }
+.zoom button:hover { background: var(--bg); }
+.leyenda {
+  position: absolute; left: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 4px; padding: 8px 10px; font: 400 11px Inter, sans-serif; color: var(--muted);
+  letter-spacing: .02em;
+}
+.leyenda .barra { width: 150px; height: 8px; margin: 6px 0 3px; }
+.leyenda .extremos { display: flex; justify-content: space-between; }
+.leyenda .item { display: flex; align-items: center; gap: 6px; }
+.leyenda .muestra { width: 12px; height: 12px; }
+
+.tooltip {
+  position: fixed; pointer-events: none; z-index: 10; max-width: 280px;
+  background: var(--ink); color: var(--on-ink);
+  border-radius: 4px; padding: 10px 12px; font-size: 13px;
+  box-shadow: 0 8px 24px rgba(15, 25, 20, .25);
+  opacity: 0; transition: opacity .12s;
+}
+.tooltip h3 { font: 600 16px/1.2 Fraunces, Georgia, serif; margin: 0 0 4px; }
+.tooltip .libro { margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--on-ink) 20%, transparent); }
+.tooltip .libro b { font-weight: 600; }
+.tooltip .meta { opacity: .7; font-size: 12px; }
+.tooltip .nota-t { margin-top: 4px; font-weight: 600; }
+
+aside {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 4px;
+  padding: 20px; max-height: calc(100vh - 40px); overflow: auto;
+  position: sticky; top: 20px;
+}
+.contador {
+  font: 650 52px/1 Fraunces, Georgia, serif; letter-spacing: -.02em; color: var(--accent);
+}
+.contador small {
+  font: 400 13px Inter, sans-serif; letter-spacing: 0; color: var(--muted); margin-left: 8px;
+}
+.progreso { height: 4px; background: var(--line); margin: 16px 0 6px; overflow: hidden; }
+.progreso div { height: 100%; background: var(--accent); transition: width .4s; }
+.pct { font: 400 11px Inter, sans-serif; color: var(--muted); }
+aside h2 {
+  font: 500 11px Inter, sans-serif; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--muted); margin: 28px 0 4px; padding-bottom: 8px; border-bottom: 1px solid var(--ink);
+}
+ol.lista { list-style: none; margin: 0; padding: 0; }
+ol.lista li {
+  padding: 10px 8px; margin: 0 -8px; cursor: pointer; border-bottom: 1px solid var(--line);
+  border-left: 3px solid transparent; transition: background .12s, border-color .12s;
+}
+ol.lista li:last-child { border-bottom: 0; }
+ol.lista li:hover { background: var(--bg); border-left-color: var(--accent); }
+ol.lista .pais-n { font-weight: 600; }
+ol.lista .libro { font-style: italic; }
+ol.lista .meta { font-size: 12px; color: var(--muted); }
+ol.lista li.l { display: flex; gap: 12px; align-items: flex-start; }
+ol.lista li.l > div:first-child { flex: 1; min-width: 0; }
+.nota {
+  flex: none; font: 650 18px/1 Fraunces, Georgia, serif; color: var(--accent);
+  padding-top: 2px; white-space: nowrap;
+}
+.nota small { font: 400 11px Inter, sans-serif; color: var(--muted); margin-left: 1px; }
+.resumen-notas {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px;
+  padding-top: 16px; border-top: 1px solid var(--line);
+}
+.resumen-notas[hidden] { display: none; }
+.resumen-notas .dato { font: 650 26px/1 Fraunces, Georgia, serif; color: var(--ink); }
+.resumen-notas .dato small { font: 400 12px Inter, sans-serif; color: var(--muted); margin-left: 2px; }
+.resumen-notas .etq { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.resumen-notas .libro-top { font-size: 13px; font-weight: 600; margin-top: 2px; line-height: 1.3; }
+.vacio { color: var(--muted); font-style: italic; }
+footer {
+  text-align: center; color: var(--muted); padding: 0 16px 28px;
+  font: 400 11px Inter, sans-serif; letter-spacing: .04em;
+}
+
+@media (max-width: 860px) {
+  header { padding: 22px 16px 12px; }
+  main { grid-template-columns: 1fr; padding: 8px 16px 24px; }
+  aside { position: static; max-height: none; }
+  .leyenda { display: none; }
+  .zoom button { width: 28px; height: 28px; font-size: 14px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <p class="kicker">Club de lectura · Atlas</p>
+    <h1>La vuelta al mundo <em>en libros</em></h1>
+    <p class="sub">Un libro por país. Elige una persona para ver su recorrido.</p>
+  </div>
+  <nav class="vistas" id="vistas" aria-label="Vista"></nav>
+</header>
+
+<main>
+  <section class="mapa" id="mapa">
+    <svg id="svg" role="img" aria-label="Mapa del mundo con los países leídos"></svg>
+    <div class="leyenda" id="leyenda"></div>
+    <div class="zoom">
+      <button id="zmas" aria-label="Acercar">+</button>
+      <button id="zmenos" aria-label="Alejar">−</button>
+      <button id="zreset" aria-label="Ver todo">⟲</button>
+    </div>
+  </section>
+  <aside>
+    <div class="contador" id="contador">0<small>países</small></div>
+    <div class="progreso"><div id="barra" style="width:0"></div></div>
+    <div class="pct" id="pct"></div>
+    <div class="resumen-notas" id="resumen-notas" hidden></div>
+    <h2 id="titulo-lista">Lecturas</h2>
+    <ol class="lista" id="lista"></ol>
+  </aside>
+</main>
+<footer id="pie"></footer>
+<div class="tooltip" id="tooltip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+const TOTAL_PAISES = 195;          // estados miembros y observadores de la ONU
+const UMBRAL_PEQUENO = 12;         // px² en zoom 1: por debajo se dibuja un punto
+const W = 960, H = 500;
+
+const svg = d3.select("#svg").attr("viewBox", `0 0 ${W} ${H}`);
+const tooltip = d3.select("#tooltip");
+const fmtFecha = f => f ? new Date(f + "T00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" }) : "";
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+let club, paises, porPais, vista = "";
+
+Promise.all([
+  d3.json("data/paises.geojson"),
+  fetch("data/club.json", { cache: "no-cache" }).then(r => r.json()),
+]).then(([geo, datos]) => {
+  club = datos;
+  paises = geo.features;
+  // d3 espera anillos exteriores en sentido horario; corrige los que vengan al revés
+  for (const f of paises) {
+    const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+    for (const p of polys) {
+      if (d3.geoArea({ type: "Polygon", coordinates: p }) > 2 * Math.PI) p.forEach(r => r.reverse());
+    }
+  }
+  porPais = d3.group(club.lecturas, l => l.pais);
+  dibujar();
+  crearVistas();
+  window.addEventListener("hashchange", leerHash);
+  leerHash();
+}).catch(e => {
+  document.getElementById("mapa").insertAdjacentHTML("afterbegin",
+    `<p style="padding:16px">No se pudieron cargar los datos (${e.message}). Si lo abres en local, usa <code>python -m http.server</code>.</p>`);
+});
+
+// ---------- mapa ----------
+const proyeccion = d3.geoNaturalEarth1();
+const ruta = d3.geoPath(proyeccion);
+const g = svg.append("g");
+let gPaises, gPuntos, zoom;
+
+function dibujar() {
+  proyeccion.fitExtent([[8, 8], [W - 8, H - 8]], { type: "Sphere" });
+  g.append("path").datum({ type: "Sphere" }).attr("class", "oceano").attr("d", ruta);
+  g.append("path").datum(d3.geoGraticule10()).attr("class", "reticula").attr("d", ruta);
+
+  gPaises = g.append("g").selectAll("path").data(paises).join("path")
+    .attr("class", "pais").attr("d", ruta)
+    .on("mousemove", (ev, d) => mostrarTooltip(ev, d))
+    .on("mouseleave", ocultarTooltip)
+    .on("click", (ev, d) => { mostrarTooltip(ev, d); });
+
+  const pequenos = paises.filter(f => ruta.area(f) < UMBRAL_PEQUENO);
+  gPuntos = g.append("g").selectAll("circle").data(pequenos).join("circle")
+    .attr("class", "punto")
+    .attr("transform", d => `translate(${ruta.centroid(d)})`)
+    .on("mousemove", (ev, d) => mostrarTooltip(ev, d))
+    .on("mouseleave", ocultarTooltip);
+
+  zoom = d3.zoom().scaleExtent([1, 24]).translateExtent([[0, 0], [W, H]])
+    .on("zoom", ev => {
+      g.attr("transform", ev.transform);
+      g.selectAll(".pais").attr("stroke-width", .5 / ev.transform.k);
+      gPuntos.attr("r", 3.2 / Math.sqrt(ev.transform.k)).attr("stroke-width", .8 / ev.transform.k);
+    });
+  svg.call(zoom).on("dblclick.zoom", null);
+  gPuntos.attr("r", 3.2).attr("stroke-width", .8);
+  d3.select("#zmas").on("click", () => svg.transition().call(zoom.scaleBy, 1.6));
+  d3.select("#zmenos").on("click", () => svg.transition().call(zoom.scaleBy, 1 / 1.6));
+  d3.select("#zreset").on("click", () => svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity));
+}
+
+function centrar(codigo) {
+  const f = paises.find(p => p.id === codigo);
+  if (!f) return;
+  const [[x0, y0], [x1, y1]] = ruta.bounds(f);
+  const k = Math.min(8, 0.6 / Math.max((x1 - x0) / W, (y1 - y0) / H));
+  const t = d3.zoomIdentity.translate(W / 2, H / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
+  svg.transition().duration(750).call(zoom.transform, t);
+  gPaises.classed("foco", d => d.id === codigo);
+  setTimeout(() => gPaises.classed("foco", false), 1600);
+}
+
+// ---------- vistas ----------
+function lecturasVisibles() {
+  return vista ? club.lecturas.filter(l => l.asistentes.includes(vista)) : club.lecturas;
+}
+
+function crearVistas() {
+  const opciones = [{ id: "", nombre: "Todo el club" }, ...club.personas.map(p => ({ id: p, nombre: p }))];
+  d3.select("#vistas").selectAll("button").data(opciones).join("button")
+    .html(d => {
+      const n = new Set((d.id ? club.lecturas.filter(l => l.asistentes.includes(d.id)) : club.lecturas).map(l => l.pais)).size;
+      return `${d.nombre}<span class="n">${n}</span>`;
+    })
+    .on("click", (ev, d) => { location.hash = d.id ? encodeURIComponent(d.id) : ""; if (!d.id) leerHash(); });
+}
+
+function leerHash() {
+  const h = decodeURIComponent(location.hash.slice(1));
+  vista = club.personas.includes(h) ? h : "";
+  actualizar();
+}
+
+function colorPais(codigo) {
+  const ls = porPais.get(codigo);
+  if (!ls) return null;
+  if (vista) return ls.some(l => l.asistentes.includes(vista)) ? css("--accent") : null;
+  const asistentes = new Set(ls.flatMap(l => l.asistentes));
+  const frac = club.personas.length ? asistentes.size / club.personas.length : 1;
+  return d3.interpolateRgb(css("--accent-soft"), css("--accent"))(0.25 + 0.75 * frac);
+}
+
+function actualizar() {
+  d3.selectAll("#vistas button").attr("aria-pressed", d => String(d.id === vista));
+
+  gPaises.each(function (d) {
+    const c = colorPais(d.id);
+    d3.select(this).classed("leido", !!c).style("fill", c);
+  });
+  gPuntos.style("fill", d => colorPais(d.id)).style("display", d => colorPais(d.id) ? null : "none");
+
+  const visibles = lecturasVisibles();
+  const n = new Set(visibles.map(l => l.pais)).size;
+  d3.select("#contador").html(`${n}<small>${n === 1 ? "país" : "países"}</small>`);
+  d3.select("#barra").style("width", `${Math.min(100, 100 * n / TOTAL_PAISES)}%`);
+  d3.select("#pct").text(`${(100 * n / TOTAL_PAISES).toLocaleString("es-ES", { maximumFractionDigits: 1 })} % de ${TOTAL_PAISES} países`);
+  d3.select("#titulo-lista").text(vista ? `Lecturas de ${vista}` : "Lecturas del club");
+
+  const nombre = Object.fromEntries(paises.map(p => [p.id, p.properties.nombre]));
+  const lista = d3.select("#lista");
+  lista.selectAll("*").remove();
+  if (!visibles.length) lista.append("li").attr("class", "vacio").text("Aún no hay lecturas.");
+  lista.selectAll("li.l").data([...visibles].reverse()).join("li").attr("class", "l")
+    .html(l => `<div><div><span class="pais-n">${esc(nombre[l.pais] || l.pais)}</span> · <span class="libro">${esc(l.libro)}</span></div>
+      <div class="meta">${esc(l.autor || "")}${l.autor && l.fecha ? " · " : ""}${fmtFecha(l.fecha)}${!vista ? ` · ${l.asistentes.length}/${club.personas.length} personas` : ""}</div></div>
+      ${!vista && tieneNota(l) ? `<div class="nota" title="Nota media del club">${fmtNota(l.nota)}<small>/10</small></div>` : ""}`)
+    .on("click", (ev, l) => centrar(l.pais));
+
+  const conNota = club.lecturas.filter(tieneNota);
+  const resumen = d3.select("#resumen-notas").attr("hidden", !vista && conNota.length ? null : "");
+  if (!vista && conNota.length) {
+    const top = d3.greatest(conNota, l => l.nota);
+    resumen.html(`<div><div class="dato">${fmtNota(d3.mean(conNota, l => l.nota))}<small>/10</small></div>
+        <div class="etq">Nota media del club</div></div>
+      <div><div class="dato">${fmtNota(top.nota)}<small>/10</small></div>
+        <div class="etq">Mejor valorado</div><div class="libro-top">${esc(top.libro)}</div></div>`);
+  }
+
+  const ley = d3.select("#leyenda");
+  if (vista) {
+    ley.html(`<div class="item"><span class="muestra" style="background:${css("--accent")}"></span>Leído por ${esc(vista)}</div>`);
+  } else {
+    ley.html(`Personas que lo leyeron<div class="barra" style="background:linear-gradient(90deg, ${colorFrac(0)}, ${colorFrac(1)})"></div>
+      <div class="extremos"><span>1</span><span>${club.personas.length}</span></div>`);
+  }
+  d3.select("#pie").text(`${club.lecturas.length} ${club.lecturas.length === 1 ? "libro leído" : "libros leídos"} · ${club.personas.length} personas en el club`);
+}
+const tieneNota = l => typeof l.nota === "number";
+const fmtNota = n => n.toLocaleString("es-ES", { maximumFractionDigits: 1 });
+const colorFrac = f => d3.interpolateRgb(css("--accent-soft"), css("--accent"))(0.25 + 0.75 * f);
+
+// ---------- tooltip ----------
+function mostrarTooltip(ev, d) {
+  const ls = (porPais.get(d.id) || []).filter(l => !vista || l.asistentes.includes(vista));
+  let html = `<h3>${esc(d.properties.nombre)}</h3>`;
+  if (!ls.length) html += `<div class="meta">${vista ? `${esc(vista)} aún no lo ha leído` : "Aún sin leer"}</div>`;
+  for (const l of ls) {
+    html += `<div class="libro"><b>${esc(l.libro)}</b>${l.autor ? `<br>${esc(l.autor)}` : ""}
+      ${!vista && tieneNota(l) ? `<div class="nota-t">Nota del club: ${fmtNota(l.nota)}/10</div>` : ""}
+      <div class="meta">${fmtFecha(l.fecha)}${l.asistentes.length ? ` · ${esc(l.asistentes.join(", "))}` : ""}</div></div>`;
+  }
+  tooltip.html(html).style("opacity", 1);
+  const r = tooltip.node().getBoundingClientRect();
+  const x = Math.min(ev.clientX + 14, innerWidth - r.width - 8);
+  const y = ev.clientY + 14 + r.height > innerHeight ? ev.clientY - r.height - 10 : ev.clientY + 14;
+  tooltip.style("left", `${Math.max(8, x)}px`).style("top", `${y}px`);
+}
+function ocultarTooltip() { tooltip.style("opacity", 0); }
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => club && actualizar());
+</script>
+</body>
+</html>

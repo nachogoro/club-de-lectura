@@ -1,0 +1,35 @@
+{
+  "personas": [
+    "María",
+    "Nacho",
+    "Celia",
+    "Mercedes",
+    "Nico",
+    "Rocío",
+    "Laura",
+    "Salva",
+    "Carlos",
+    "Andrea",
+    "Elsa",
+    "Julia",
+    "Cristina"
+  ],
+  "lecturas": [
+    {
+      "pais": "HRV",
+      "libro": "Hotel Tito",
+      "autor": "Ivana Bodrožić",
+      "fecha": "2026-10-10",
+      "asistentes": [
+        "María",
+        "Nacho",
+        "Nico",
+        "Rocío",
+        "Laura",
+        "Salva",
+        "Carlos"
+      ],
+      "nota": 5
+    }
+  ]
+}
