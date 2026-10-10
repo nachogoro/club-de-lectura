@@ -2,13 +2,13 @@
 """Gestión del mapa del club de lectura.
 
 Ejemplos:
-  python club.py persona añadir Ana
-  python club.py leer japon "Kafka en la orilla" --autor "Haruki Murakami" --asistentes Ana,Luis
-  python club.py marcar japon Marta
-  python club.py desmarcar japon Luis
-  python club.py nota japon 7.5
-  python club.py estado
-  python club.py buscar guinea
+  python club.py member add Ana
+  python club.py add japon "Kafka en la orilla" --author "Haruki Murakami" --attendees Ana,Luis --grade 7.5
+  python club.py mark japon Marta
+  python club.py unmark japon Luis
+  python club.py grade japon 8
+  python club.py status
+  python club.py search guinea
 """
 import argparse
 import datetime as dt
@@ -61,7 +61,7 @@ def resolver_pais(texto, paises):
     if len(parciales) == 1:
         return parciales[0]
     if not parciales:
-        error(f"no encuentro el país «{texto}». Prueba: python club.py buscar <texto>")
+        error(f"no encuentro el país «{texto}». Prueba: python club.py search <texto>")
     opciones = "\n".join(f"  {c}  {paises[c]}" for c in parciales)
     error(f"«{texto}» es ambiguo. Usa el código:\n{opciones}")
 
@@ -72,7 +72,7 @@ def resolver_personas(nombres, club):
     for nombre in nombres:
         p = por_norm.get(normalizar(nombre))
         if p is None:
-            error(f"«{nombre}» no está en el club. Añádela con: python club.py persona añadir {nombre}")
+            error(f"«{nombre}» no está en el club. Añádela con: python club.py member add {nombre}")
         if p not in resultado:
             resultado.append(p)
     return resultado
@@ -90,10 +90,10 @@ def elegir_lectura(club, codigo, libro, paises):
     if not lecturas:
         error(f"no hay ninguna lectura de {paises[codigo]}"
               + (f" con el libro «{libro}»" if libro else "")
-              + ". Créala con: python club.py leer ...")
+              + ". Créala con: python club.py add ...")
     if len(lecturas) > 1 and not libro:
         print(f"Hay {len(lecturas)} lecturas de {paises[codigo]}; uso la más reciente "
-              f"(«{lecturas[-1]['libro']}»). Usa --libro para elegir otra.")
+              f"(«{lecturas[-1]['libro']}»). Usa --book para elegir otra.")
     return lecturas[-1]
 
 
@@ -122,7 +122,7 @@ def leer_nota(texto):
 
 def cmd_persona(a, club, paises):
     nombres = separar(a.nombres)
-    if a.accion == "añadir":
+    if a.accion == "add":
         for n in nombres:
             if normalizar(n) in {normalizar(p) for p in club["personas"]}:
                 print(f"{n} ya estaba en el club")
@@ -149,7 +149,7 @@ def cmd_leer(a, club, paises):
     asistentes = club["personas"][:] if a.todos else resolver_personas(separar(a.asistentes), club)
     asistentes.sort(key=club["personas"].index)
     if not asistentes:
-        print("Aviso: lectura sin asistentes. Añádelos con: python club.py marcar <país> <personas>")
+        print("Aviso: lectura sin asistentes. Añádelos con: python club.py mark <país> <personas>")
     lectura = {"pais": codigo, "libro": a.libro, "autor": a.autor or "",
                "fecha": fecha, "asistentes": asistentes}
     if a.nota is not None:
@@ -175,7 +175,7 @@ def cmd_marcar(a, club, paises, marcar=True):
 def cmd_nota(a, club, paises):
     codigo = resolver_pais(a.pais, paises)
     lectura = elegir_lectura(club, codigo, a.libro, paises)
-    if a.valor.lower() in ("quitar", "borrar", "-"):
+    if a.valor.lower() in ("remove", "none", "-"):
         lectura.pop("nota", None)
     else:
         lectura["nota"] = leer_nota(a.valor)
@@ -222,52 +222,50 @@ def main():
                                  epilog=__doc__.split("\n", 2)[2])
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("persona", help="añadir o quitar miembros del club")
-    s.add_argument("accion", choices=["añadir", "anadir", "quitar"])
-    s.add_argument("nombres", nargs="+")
+    s = sub.add_parser("member", help="añadir o quitar miembros del club")
+    s.add_argument("accion", metavar="{add,remove}", choices=["add", "remove"])
+    s.add_argument("nombres", metavar="names", nargs="+")
     s.set_defaults(f=cmd_persona)
 
-    s = sub.add_parser("leer", help="registrar la lectura de un país")
-    s.add_argument("pais", help="código ISO (JPN) o nombre (japon)")
-    s.add_argument("libro")
-    s.add_argument("--autor")
-    s.add_argument("--fecha", help="AAAA-MM-DD (por defecto, hoy)")
-    s.add_argument("--nota", help="nota media del club, de 0 a 10")
+    s = sub.add_parser("add", help="registrar la lectura de un país")
+    s.add_argument("pais", metavar="country", help="código ISO (JPN) o nombre (japon)")
+    s.add_argument("libro", metavar="book")
+    s.add_argument("--author", dest="autor")
+    s.add_argument("--date", dest="fecha", help="AAAA-MM-DD (por defecto, hoy)")
+    s.add_argument("--grade", dest="nota", help="nota media del club, de 0 a 10")
     g = s.add_mutually_exclusive_group()
-    g.add_argument("--asistentes", nargs="+", help="Ana,Luis o Ana Luis")
-    g.add_argument("--todos", action="store_true", help="asistió todo el club")
+    g.add_argument("--attendees", dest="asistentes", nargs="+", help="Ana,Luis o Ana Luis")
+    g.add_argument("--all", dest="todos", action="store_true", help="asistió todo el club")
     s.set_defaults(f=cmd_leer)
 
-    for nombre, ayuda, marcar in [("marcar", "añadir asistentes a una lectura", True),
-                                  ("desmarcar", "quitar asistentes de una lectura", False)]:
+    for nombre, ayuda, marcar in [("mark", "añadir asistentes a una lectura", True),
+                                  ("unmark", "quitar asistentes de una lectura", False)]:
         s = sub.add_parser(nombre, help=ayuda)
-        s.add_argument("pais")
-        s.add_argument("personas", nargs="+")
-        s.add_argument("--libro", help="para elegir si hay varias lecturas del país")
+        s.add_argument("pais", metavar="country")
+        s.add_argument("personas", metavar="names", nargs="+")
+        s.add_argument("--book", dest="libro", help="para elegir si hay varias lecturas del país")
         s.set_defaults(f=lambda a, c, p, m=marcar: cmd_marcar(a, c, p, m))
 
-    s = sub.add_parser("nota", help="poner o cambiar la nota media de una lectura")
-    s.add_argument("pais")
-    s.add_argument("valor", help="de 0 a 10 (admite decimales: 7.5 o 7,5), o «quitar»")
-    s.add_argument("--libro", help="para elegir si hay varias lecturas del país")
+    s = sub.add_parser("grade", help="poner o cambiar la nota media de una lectura")
+    s.add_argument("pais", metavar="country")
+    s.add_argument("valor", metavar="value", help="de 0 a 10 (admite decimales: 7.5 o 7,5), o «remove»")
+    s.add_argument("--book", dest="libro", help="para elegir si hay varias lecturas del país")
     s.set_defaults(f=cmd_nota)
 
-    s = sub.add_parser("borrar", help="eliminar una lectura")
-    s.add_argument("pais")
-    s.add_argument("--libro")
+    s = sub.add_parser("delete", help="eliminar una lectura")
+    s.add_argument("pais", metavar="country")
+    s.add_argument("--book", dest="libro")
     s.set_defaults(f=cmd_borrar)
 
-    s = sub.add_parser("estado", help="resumen de lecturas y países por persona")
-    s.add_argument("personas", nargs="*")
+    s = sub.add_parser("status", help="resumen de lecturas y países por persona")
+    s.add_argument("personas", metavar="names", nargs="*")
     s.set_defaults(f=cmd_estado)
 
-    s = sub.add_parser("buscar", help="buscar el código de un país")
-    s.add_argument("texto")
+    s = sub.add_parser("search", help="buscar el código de un país")
+    s.add_argument("texto", metavar="text")
     s.set_defaults(f=cmd_buscar)
 
     a = ap.parse_args()
-    if a.cmd == "persona" and a.accion == "anadir":
-        a.accion = "añadir"
     club = cargar_club()
     if a.f(a, club, cargar_paises()):
         guardar_club(club)

@@ -15,32 +15,32 @@ Los países se indican por nombre en español (sin importar tildes ni mayúscula
 
 ```bash
 # Miembros del club
-python club.py persona añadir Ana Luis Marta
-python club.py persona quitar Luis
+python club.py member add Ana Luis Marta
+python club.py member remove Luis
 
 # Registrar una reunión (fecha por defecto: hoy)
-python club.py leer japon "Kafka en la orilla" --autor "Haruki Murakami" --fecha 2026-01-20 --asistentes Ana,Marta
-python club.py leer nigeria "Todo se desmorona" --autor "Chinua Achebe" --todos
+python club.py add japon "Kafka en la orilla" --author "Haruki Murakami" --date 2026-01-20 --attendees Ana,Marta
+python club.py add nigeria "Todo se desmorona" --author "Chinua Achebe" --all
 
 # Nota media del club (0 a 10, admite decimales)
-python club.py leer peru "La ciudad y los perros" --autor "Mario Vargas Llosa" --nota 8 --todos
-python club.py nota croacia 5
-python club.py nota croacia quitar
+python club.py add peru "La ciudad y los perros" --author "Mario Vargas Llosa" --grade 8 --all
+python club.py grade croacia 5
+python club.py grade croacia remove
 
 # Corregir la asistencia
-python club.py marcar japon Luis
-python club.py desmarcar japon Marta
+python club.py mark japon Luis
+python club.py unmark japon Marta
 
 # Borrar una lectura
-python club.py borrar japon
+python club.py delete japon
 
 # Consultar
-python club.py estado          # todo
-python club.py estado Ana      # una persona
-python club.py buscar guinea   # códigos de países que coinciden
+python club.py status          # todo
+python club.py status Ana      # una persona
+python club.py search guinea   # códigos de países que coinciden
 ```
 
-Si un país tiene varias lecturas, `marcar`, `desmarcar`, `nota` y `borrar` actúan sobre la más reciente; usa `--libro "título"` para elegir otra.
+Si un país tiene varias lecturas, `mark`, `unmark`, `grade` y `delete` actúan sobre la más reciente; usa `--book "título"` para elegir otra.
 
 ## Publicar en GitHub Pages
 
@@ -57,7 +57,7 @@ El mapa quedará en `https://USUARIO.github.io/mapa-libros/`.
 Después de cada reunión:
 
 ```bash
-python club.py leer ...
+python club.py add ...
 git commit -am "Lectura: Japón" && git push
 ```
 
