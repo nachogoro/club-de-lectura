@@ -3,10 +3,10 @@
 
 Ejemplos:
   python club.py member add Ana
-  python club.py add japon "Kafka en la orilla" --author "Haruki Murakami" --attendees Ana,Luis --grade 7.5
+  python club.py add japon "Kafka en la orilla" --author "Haruki Murakami" --attendees Ana,Luis --grade 3.75
   python club.py mark japon Marta
   python club.py unmark japon Luis
-  python club.py grade japon 8
+  python club.py grade japon 4.25
   python club.py status
   python club.py search guinea
 """
@@ -100,7 +100,7 @@ def elegir_lectura(club, codigo, libro, paises):
 def describir(l, paises):
     autor = f" — {l['autor']}" if l.get("autor") else ""
     asist = ", ".join(l["asistentes"]) or "(nadie)"
-    nota = f"  {formatear_nota(l['nota'])}/10" if l.get("nota") is not None else ""
+    nota = f"  {formatear_nota(l['nota'])}/5" if l.get("nota") is not None else ""
     return f"{l.get('fecha') or '????-??-??'}  {paises.get(l['pais'], l['pais'])}: «{l['libro']}»{autor}{nota}  [{asist}]"
 
 
@@ -112,10 +112,12 @@ def leer_nota(texto):
     try:
         n = float(str(texto).replace(",", "."))
     except ValueError:
-        error(f"la nota debe ser un número entre 0 y 10 (recibido «{texto}»)")
-    if not 0 <= n <= 10:
-        error("la nota debe estar entre 0 y 10")
-    return int(n) if n == int(n) else round(n, 2)
+        error(f"la nota debe ser un número entre 0 y 5 (recibido «{texto}»)")
+    if not 0 <= n <= 5:
+        error("la nota debe estar entre 0 y 5")
+    if n * 4 != int(n * 4):
+        error("la nota va en cuartos de estrella: 0, 0.25, 0.5, 0.75, 1…")
+    return int(n) if n == int(n) else n
 
 
 # ---------- comandos ----------
@@ -199,7 +201,7 @@ def cmd_estado(a, club, paises):
             print("  " + describir(l, paises))
         total = {l["pais"] for l in club["lecturas"]}
         notas = [l["nota"] for l in club["lecturas"] if l.get("nota") is not None]
-        media = f" · nota media {formatear_nota(round(sum(notas) / len(notas), 2))}/10" if notas else ""
+        media = f" · nota media {formatear_nota(round(sum(notas) / len(notas), 2))}/5" if notas else ""
         print(f"\nClub: {len(total)} países{media}")
         personas = club["personas"]
     for p in personas:
@@ -232,7 +234,7 @@ def main():
     s.add_argument("libro", metavar="book")
     s.add_argument("--author", dest="autor")
     s.add_argument("--date", dest="fecha", help="AAAA-MM-DD (por defecto, hoy)")
-    s.add_argument("--grade", dest="nota", help="nota media del club, de 0 a 10")
+    s.add_argument("--grade", dest="nota", help="nota media del club, de 0 a 5 estrellas en cuartos")
     g = s.add_mutually_exclusive_group()
     g.add_argument("--attendees", dest="asistentes", nargs="+", help="Ana,Luis o Ana Luis")
     g.add_argument("--all", dest="todos", action="store_true", help="asistió todo el club")
@@ -248,7 +250,7 @@ def main():
 
     s = sub.add_parser("grade", help="poner o cambiar la nota media de una lectura")
     s.add_argument("pais", metavar="country")
-    s.add_argument("valor", metavar="value", help="de 0 a 10 (admite decimales: 7.5 o 7,5), o «remove»")
+    s.add_argument("valor", metavar="value", help="de 0 a 5 estrellas en cuartos (3.75 o 3,75), o «remove»")
     s.add_argument("--book", dest="libro", help="para elegir si hay varias lecturas del país")
     s.set_defaults(f=cmd_nota)
 

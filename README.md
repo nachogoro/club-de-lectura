@@ -22,9 +22,9 @@ python club.py member remove Luis
 python club.py add japon "Kafka en la orilla" --author "Haruki Murakami" --date 2026-01-20 --attendees Ana,Marta
 python club.py add nigeria "Todo se desmorona" --author "Chinua Achebe" --all
 
-# Nota media del club (0 a 10, admite decimales)
-python club.py add peru "La ciudad y los perros" --author "Mario Vargas Llosa" --grade 8 --all
-python club.py grade croacia 5
+# Nota media del club (de 0 a 5 estrellas, en cuartos: 0.25, 0.5, 0.75…)
+python club.py add peru "La ciudad y los perros" --author "Mario Vargas Llosa" --grade 4 --all
+python club.py grade croacia 2.5
 python club.py grade croacia remove
 
 # Corregir la asistencia

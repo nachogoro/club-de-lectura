@@ -112,7 +112,7 @@ main {
 .tooltip .libro { margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--on-ink) 20%, transparent); }
 .tooltip .libro b { font-weight: 600; }
 .tooltip .meta { opacity: .7; font-size: 12px; }
-.tooltip .nota-t { margin-top: 4px; font-weight: 600; }
+.tooltip .nota-t { margin-top: 4px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 
 aside {
   background: var(--panel); border: 1px solid var(--line); border-radius: 4px;
@@ -145,10 +145,17 @@ ol.lista .meta { font-size: 12px; color: var(--muted); }
 ol.lista li.l { display: flex; gap: 12px; align-items: flex-start; }
 ol.lista li.l > div:first-child { flex: 1; min-width: 0; }
 .nota {
-  flex: none; font: 650 18px/1 Fraunces, Georgia, serif; color: var(--accent);
-  padding-top: 2px; white-space: nowrap;
+  flex: none; padding-top: 2px; white-space: nowrap; text-align: right;
 }
-.nota small { font: 400 11px Inter, sans-serif; color: var(--muted); margin-left: 1px; }
+.nota small { display: block; font: 400 11px Inter, sans-serif; color: var(--muted); margin-top: 3px; }
+.estrellas {
+  position: relative; display: inline-block; font: 400 15px/1 Inter, sans-serif;
+  letter-spacing: 1px; white-space: nowrap;
+}
+.estrellas::before { content: "★★★★★"; color: color-mix(in srgb, currentColor 22%, transparent); }
+.estrellas span { position: absolute; inset: 0 auto 0 0; overflow: hidden; color: var(--hover); }
+.estrellas span::before { content: "★★★★★"; }
+.resumen-notas .estrellas { font-size: 18px; margin-top: 6px; }
 .resumen-notas {
   display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px;
   padding-top: 16px; border-top: 1px solid var(--line);
@@ -342,16 +349,17 @@ function actualizar() {
   lista.selectAll("li.l").data([...visibles].reverse()).join("li").attr("class", "l")
     .html(l => `<div><div><span class="pais-n">${esc(nombre[l.pais] || l.pais)}</span> · <span class="libro">${esc(l.libro)}</span></div>
       <div class="meta">${esc(l.autor || "")}${l.autor && l.fecha ? " · " : ""}${fmtFecha(l.fecha)}${!vista ? ` · ${l.asistentes.length}/${club.personas.length} personas` : ""}</div></div>
-      ${!vista && tieneNota(l) ? `<div class="nota" title="Nota media del club">${fmtNota(l.nota)}<small>/10</small></div>` : ""}`)
+      ${!vista && tieneNota(l) ? `<div class="nota" title="Nota media del club">${estrellas(l.nota)}<small>${fmtNota(l.nota)}/5</small></div>` : ""}`)
     .on("click", (ev, l) => centrar(l.pais));
 
   const conNota = club.lecturas.filter(tieneNota);
   const resumen = d3.select("#resumen-notas").attr("hidden", !vista && conNota.length ? null : "");
   if (!vista && conNota.length) {
     const top = d3.greatest(conNota, l => l.nota);
-    resumen.html(`<div><div class="dato">${fmtNota(d3.mean(conNota, l => l.nota))}<small>/10</small></div>
+    const media = d3.mean(conNota, l => l.nota);
+    resumen.html(`<div><div class="dato">${fmtNota(media)}<small>/5</small></div>${estrellas(media)}
         <div class="etq">Nota media del club</div></div>
-      <div><div class="dato">${fmtNota(top.nota)}<small>/10</small></div>
+      <div><div class="dato">${fmtNota(top.nota)}<small>/5</small></div>${estrellas(top.nota)}
         <div class="etq">Mejor valorado</div><div class="libro-top">${esc(top.libro)}</div></div>`);
   }
 
@@ -365,7 +373,8 @@ function actualizar() {
   d3.select("#pie").text(`${club.lecturas.length} ${club.lecturas.length === 1 ? "libro leído" : "libros leídos"} · ${club.personas.length} personas en el club`);
 }
 const tieneNota = l => typeof l.nota === "number";
-const fmtNota = n => n.toLocaleString("es-ES", { maximumFractionDigits: 1 });
+const fmtNota = n => n.toLocaleString("es-ES", { maximumFractionDigits: 2 });
+const estrellas = n => `<span class="estrellas" role="img" aria-label="${fmtNota(n)} de 5 estrellas"><span style="width:${100 * n / 5}%"></span></span>`;
 const colorFrac = f => d3.interpolateRgb(css("--accent-soft"), css("--accent"))(0.25 + 0.75 * f);
 
 // ---------- tooltip ----------
@@ -375,7 +384,7 @@ function mostrarTooltip(ev, d) {
   if (!ls.length) html += `<div class="meta">${vista ? `${esc(vista)} aún no lo ha leído` : "Aún sin leer"}</div>`;
   for (const l of ls) {
     html += `<div class="libro"><b>${esc(l.libro)}</b>${l.autor ? `<br>${esc(l.autor)}` : ""}
-      ${!vista && tieneNota(l) ? `<div class="nota-t">Nota del club: ${fmtNota(l.nota)}/10</div>` : ""}
+      ${!vista && tieneNota(l) ? `<div class="nota-t">Nota del club: ${estrellas(l.nota)} ${fmtNota(l.nota)}/5</div>` : ""}
       <div class="meta">${fmtFecha(l.fecha)}${l.asistentes.length ? ` · ${esc(l.asistentes.join(", "))}` : ""}</div></div>`;
   }
   tooltip.html(html).style("opacity", 1);
