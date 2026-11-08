@@ -12,7 +12,8 @@
     "Andrea",
     "Elsa",
     "Julia",
-    "Cristina"
+    "Cristina",
+    "Natalia"
   ],
   "lecturas": [
     {
@@ -30,6 +31,23 @@
         "Carlos"
       ],
       "nota": 2.5
+    },
+    {
+      "pais": "CHN",
+      "libro": "Nacer mujer en China",
+      "autor": "Xinran",
+      "fecha": "2026-11-08",
+      "asistentes": [
+        "María",
+        "Nacho",
+        "Celia",
+        "Rocío",
+        "Carlos",
+        "Elsa",
+        "Cristina",
+        "Natalia"
+      ],
+      "nota": 0.75
     }
   ]
 }
